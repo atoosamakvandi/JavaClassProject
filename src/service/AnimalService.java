@@ -2,7 +2,13 @@ package service;
 
 import model.Animal;
 import model.AnimalType;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.util.*;
 
@@ -38,26 +44,35 @@ public class AnimalService {
         saveAnimals();
     }
 
-    private void loadAnimals() {
+
+    public void loadAnimals() {
         if (!file.exists()) return;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(file);
+
+            NodeList nodeList = document.getElementsByTagName("animal");
+
             animals.clear();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                String[] parts = line.split(",");
-                if (parts.length != 5) continue;
-                Animal a = new Animal(
-                    parts[0],
-                    Double.parseDouble(parts[1]),
-                    parts[2],
-                    Integer.parseInt(parts[3]),
-                    AnimalType.valueOf(parts[4])
-                );
-                animals.add(a);
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                Node node = nodeList.item(i);
+
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    Element element = (Element) node;
+
+                    String name = element.getElementsByTagName("name").item(0).getTextContent();
+                    double weight = Double.parseDouble(element.getElementsByTagName("weight").item(0).getTextContent());
+                    String gender = element.getElementsByTagName("gender").item(0).getTextContent();
+                    int birthYear = Integer.parseInt(element.getElementsByTagName("birthYear").item(0).getTextContent());
+                    AnimalType type = AnimalType.valueOf(element.getElementsByTagName("type").item(0).getTextContent());
+
+                    Animal animal = new Animal(name, weight, gender, birthYear, type);
+                    animals.add(animal);
+                }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
